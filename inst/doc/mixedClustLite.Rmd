@@ -1,0 +1,225 @@
+---
+title: "mixedClust"
+output: 
+  rmarkdown::html_vignette:
+    fig_caption: true
+bibliography: bibliography.bib
+vignette: >
+  %\VignetteIndexEntry{mixedClust}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+## Description
+
+mixedClust is an R package to perform co-clustering on heterogeneous data. The kind of data that are taken into account are:
+* Categorical
+* Quantitative
+* Integer
+* Ordinal
+* Functional
+
+## Installation
+```r
+set.seed(5)
+```
+```r
+library(mixedClust)
+```
+
+## Datasets
+
+__under construction__
+
+## Simulation of heterogeneous data
+
+The following codes simulate a sample of heterogeneous data.
+```r
+M <- matrix(0, nrow=150,ncol=250)
+```
+
+### Simulation of categorical data
+This snippet creates a sample of categorical data with 6 levels.
+
+```r
+multinomial6.block1 <- sample(1:6, 120*75, prob = c(0.4,0.25,0.1,0.1,0.05,0.1), replace = TRUE)
+multinomial6.block2 <- sample(1:6, 120*50, prob = c(0.1,0.1,0.05,0.6,0.1,0.05), replace = TRUE)
+multinomial6.block3 <- sample(1:6, 30*75, prob = c(0.2,0.1,0.2,0.1,0.1,0.3), replace = TRUE)
+multinomial6.block4 <- sample(1:6, 30*50, prob = c(0.05,0.2,0.1,0.2,0.4,0.05), replace = TRUE)
+
+M[1:120,1:75] <- multinomial6.block1
+M[1:120,76:125] <- multinomial6.block2
+M[121:150,1:75] <- multinomial6.block3
+M[121:150,76:125] <- multinomial6.block4
+```
+
+### Simulation of quantitative data
+
+```r
+gaussian.block1 <- rnorm(120*10)
+gaussian.block2 <- rnorm(120*40,mean=28,sd=7)
+gaussian.block3 <- rnorm(30*10,mean=-12,sd=1.5)
+gaussian.block4 <- rnorm(30*40,mean=2,sd=1.5)
+
+M[1:120,126:135] <-gaussian.block1
+M[1:120,136:175] <- gaussian.block2
+M[121:150,126:135] <- gaussian.block3
+M[121:150,136:175] <- gaussian.block4
+```
+
+### Simulation of ordinal data
+
+The model Bos is used to simulate ordinal data. This snippet creates a sample of ordinal data with 5 levels.
+
+```r
+library(ordinalClust)
+
+m=5 
+probaBOS=rep(0,m)
+for (im in 1:m) probaBOS[im]=pejSim(im,m,4,0.8)
+bos.block1 <- matrix(0,nrow = 120, ncol = 35)
+bos.block1 <- sample(1:m,120*35,prob = probaBOS, replace=TRUE)
+
+probaBOS=rep(0,m)
+for (im in 1:m) probaBOS[im]=pejSim(im,m,2,0.3)
+bos.block2 <- matrix(0,nrow = 120, ncol = 20)
+bos.block2 <- sample(1:m,120*20,prob = probaBOS, replace=TRUE)
+
+probaBOS=rep(0,m)
+for (im in 1:m) probaBOS[im]=pejSim(im,m,1,0.7)
+bos.block3 <- matrix(0,nrow = 120, ncol = 20)
+bos.block3 <- sample(1:m,120*20,prob = probaBOS, replace=TRUE)
+
+probaBOS=rep(0,m)
+for (im in 1:m) probaBOS[im]=pejSim(im,m,3,0.8)
+bos.block4 <- matrix(0,nrow = 30, ncol = 35)
+bos.block4 <- sample(1:m,30*35,prob = probaBOS, replace=TRUE)
+
+probaBOS=rep(0,m)
+for (im in 1:m) probaBOS[im]=pejSim(im,m,5,0.4)
+bos.block5 <- matrix(0,nrow = 30, ncol = 20)
+bos.block5 <- sample(1:m,30*20,prob = probaBOS, replace=TRUE)
+
+probaBOS=rep(0,m)
+for (im in 1:m) probaBOS[im]=pejSim(im,m,5,0.8)
+bos.block6 <- matrix(0,nrow = 30, ncol = 20)
+bos.block6 <- sample(1:m,30*20,prob = probaBOS, replace=TRUE)
+
+M[1:120,176:210] <-bos.block1
+M[1:120,211:230] <- bos.block2
+M[1:120,231:250] <- bos.block3
+M[121:150,176:210] <-bos.block4
+M[121:150,211:230] <- bos.block5
+M[121:150,231:250] <- bos.block6
+```
+
+### Shuffling lines and columns
+```r
+line.sample <- sample(1:150,150,replace = F)
+
+col.sample.cat <- sample(1:125,125,replace=F)
+col.sample.gaussian <- sample(126:175,50,replace=F)
+col.sample.bos <- sample(176:250,75,replace=F)
+
+M1 <- M[line.sample,c(col.sample.cat, col.sample.gaussian, col.sample.bos)]
+```
+
+## Setting parameters
+
+```r
+nbSEM=120
+nbSEMburn=100
+nbindmini=1
+init = "kmeans"
+
+kr=2
+kc=c(2,2,3)
+m=c(6,5)
+d.list <- c(1,126,176)
+distributions <- c("Multinomial","Gaussian","Bos")
+```
+
+## Perform co-clustering
+
+In this section, a co-clustering is executed with the simulated dataset, thanks to the **mixedCoclust** function.
+
+```r
+res <- mixedCoclust(x = M1, myList = d.list,distrib_names = distributions,
+                    kr = kr, kc = kc, m = m, init = init,nbSEM = nbSEM,
+                    nbSEMburn = nbSEMburn, nbindmini = nbindmini)
+```
+
+
+## The particular case of functional data
+Functional data is taken into account in this package. However, the way of introducing them is a bit different since they are not represented by a simple matrix. Functional data must be stored in a **functionalData** array with three dimensions:
+* nrow = number of row that must be identical to the number of rows of the x data matrix.
+* ncol = number of features of the functional type
+* nslice = number of points for one function (all functions must have the same number of points)
+Then, **functionalData** is passed as an argument to the different functions (co-clustering, clustering, classification).
+
+
+
+### Simulation of functional data
+The **fda.usc** package is used to simulate functional data
+
+```r
+library(fda.usc)
+
+par(mfrow=c(1,2))
+lent<-50
+tt<-seq(0,1,len=lent)
+mu1<-fdata(0.5*cos(2.3*2*pi*tt)+5.4*sin(0.4*2*pi*tt),tt)
+mu2<-fdata(cos(2*pi*tt)+sin(2*pi*tt),tt)
+mu3<-fdata(2*cos(2*pi*tt)+sin(2*pi*tt*4),tt)
+mu4<-fdata(sin(2*pi*tt*5),tt)
+nb <- 100
+func.block.1 <- rproc2fdata(nb,mu=mu1,sigma="OU",par.list=list("scale"=1))
+func.block.2 <- rproc2fdata(nb,mu=mu2,sigma="OU",par.list=list("scale"=1))
+func.block.3 <- rproc2fdata(nb,mu=mu3,sigma="OU",par.list=list("scale"=1))
+func.block.4 <- rproc2fdata(nb,mu=mu4,sigma="OU",par.list=list("scale"=1))
+```
+
+The **functionalData** array is built:
+
+```r
+functionalData <- array(0,c(20,20,50))
+functionalData[1:10,1:10,]=func.block.1$data
+functionalData[1:10,11:20,]=func.block.2$data
+functionalData[11:20,1:10,]=func.block.3$data
+functionalData[11:20,11:20,]=func.block.4$data
+
+sample.lines <- sample(1:20,20,replace=F)
+sample.cols <- sample(1:20, 20, replace=F)
+functionalData <- functionalData[sample.lines, sample.cols,]
+
+line.labels <- c(rep(1,10),rep(2,10))[sample.lines]
+col.labels <- c(rep(1,10),rep(2,10))[sample.cols]
+```
+
+### Setting parameters
+One of the limitation of functional data is that the kmeans algorithm cannot be used as initialization.
+```r
+nbSEM=120
+nbSEMburn=100
+nbindmini=1
+init = "random"
+kc = c(2)
+kr = 2 
+distributions <- c("Functional")
+```
+
+### Performing co-clustering with functional data
+
+```r
+res <- mixedCoclust(distrib_names = distributions,kr = kr, kc = kc,
+                    init = init, nbSEM = nbSEM, nbSEMburn = nbSEMburn,
+                    nbindmini = nbindmini, functionalData = functionalData)
+```
+
+
+
+## References
+
+
+
+

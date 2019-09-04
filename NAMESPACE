@@ -1,0 +1,5 @@
+useDynLib(mixedClust)
+export("mixedCoclust")
+importFrom(Rcpp, evalCpp)
+importFrom("methods", "setClass") 
+import(fda)
