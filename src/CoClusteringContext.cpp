@@ -8,7 +8,7 @@ CoClusteringContext::CoClusteringContext(arma::mat& x, std::vector< arma::urowve
 
 	// attributes that are directly instanciated
 	this->_x = x;
-	this->_N = _x.n_rows;
+	this->_Nr = _x.n_rows;
 	this->_dlist = dlist;
 	this->_distrib_names = distrib_names;
 	this->_kr = kr;
@@ -74,13 +74,13 @@ CoClusteringContext::CoClusteringContext(arma::mat& x, std::vector< arma::urowve
 
 
 		if (!(distrib_name == "Functional")) {
-			this->_J.push_back(_dlist.at(idistrib).size());
+			this->_Jc.push_back(_dlist.at(idistrib).size());
 		}
 		else if (!(functionalData.n_slices == 1 && functionalData.n_rows == 1 && functionalData.n_cols == 1)) {
-			this->_J.push_back(functionalData.n_cols);
+			this->_Jc.push_back(functionalData.n_cols);
 		}
 
-		vector<int> tmp_zc(_J.at(idistrib));
+		vector<int> tmp_zc(_Jc.at(idistrib));
 		std::fill(tmp_zc.begin(), tmp_zc.end(), 0);
 		tmp_zcvec[idistrib] = tmp_zc;
 		rowvec tmp_rho(_kc.at(idistrib), fill::zeros);
@@ -90,19 +90,19 @@ CoClusteringContext::CoClusteringContext(arma::mat& x, std::vector< arma::urowve
 
 
 		// probas and logprobas tables
-		mat tmp_probaW(_J[idistrib], _kc.at(idistrib), fill::zeros);
+		mat tmp_probaW(_Jc[idistrib], _kc.at(idistrib), fill::zeros);
 		this->_probaW.push_back(tmp_probaW);
-		mat tmp_logprobaW(_J[idistrib], _kc.at(idistrib), fill::zeros);
+		mat tmp_logprobaW(_Jc[idistrib], _kc.at(idistrib), fill::zeros);
 		this->_logprobaW.push_back(tmp_probaW);
-		mat tmp_W(_J[idistrib], _kc.at(idistrib), fill::zeros);
+		mat tmp_W(_Jc[idistrib], _kc.at(idistrib), fill::zeros);
 		this->_W.push_back(tmp_W);
 
-		mat tmp_zcchain(_nbSEM, _J[idistrib], fill::zeros);
+		mat tmp_zcchain(_nbSEM, _Jc[idistrib], fill::zeros);
 		this->_zcchain.push_back(tmp_zcchain);
 
 	}
 
-	//this->_J = tmp_J;
+	//this->_Jc = tmp_Jc;
 	//this->_probaW = tmp_probaWvec;
 	//this->_logprobaW = tmp_logprobaWvec;
 	this->_zc = tmp_zcvec;
@@ -115,21 +115,21 @@ CoClusteringContext::CoClusteringContext(arma::mat& x, std::vector< arma::urowve
 	// attributes regarding lines
 	
 	if (!(functionalData.n_slices == 1 && functionalData.n_rows == 1 && functionalData.n_cols == 1) && _number_distrib == 1) {
-		this->_N = functionalData.n_rows;
+		this->_Nr = functionalData.n_rows;
 	}
 
-	this->_zrchain = zeros(_nbSEM,_N);
+	this->_zrchain = zeros(_nbSEM,_Nr);
 
-	mat tmp_probaV(_N, _kr, fill::zeros);
+	mat tmp_probaV(_Nr, _kr, fill::zeros);
 	this->_probaV = tmp_probaV;
-	mat tmp_logprobaV(_N, _kr, fill::zeros);
+	mat tmp_logprobaV(_Nr, _kr, fill::zeros);
 	this->_logprobaV = tmp_probaV;
-	vector<int> tmp_zr(this->_N);
+	vector<int> tmp_zr(this->_Nr);
 	std::fill(tmp_zr.begin(), tmp_zr.end(), 0);
 	this->_zr = tmp_zr;
 
 
-	mat tmp_V(_N, _kr, fill::zeros);
+	mat tmp_V(_Nr, _kr, fill::zeros);
 	this->_V = tmp_V;
 	rowvec tmp_gamma(_kr);
 	std::fill(tmp_gamma.begin(), tmp_gamma.end(), 0);
@@ -185,7 +185,7 @@ bool CoClusteringContext::initialization() {
 		std::fill(vec.begin(), vec.end(), prob);
 		discrete_distribution<> d(vec.begin(), vec.end());
 		this->_V.zeros();
-		for (int i = 0; i<_N; ++i) {
+		for (int i = 0; i<_Nr; ++i) {
 			// random!
 			mt19937 gen(_rd());
 			int sample = d(gen);
@@ -205,7 +205,7 @@ bool CoClusteringContext::initialization() {
 			probas.ones();
 			probas = probas/_kc[idistrib];
 			discrete_distribution<> d(probas.begin(), probas.end());
-			for (int i = 0; i<_J.at(idistrib); ++i) {
+			for (int i = 0; i<_Jc.at(idistrib); ++i) {
 				// random!
 				mt19937 gen(_rd());
 				int sample = d(gen);
@@ -230,7 +230,7 @@ bool CoClusteringContext::initialization() {
 
 
 
-		int Nsample = ceil(percentR * _N);
+		int Nsample = ceil(percentR * _Nr);
 		vector<int> Jsample(_number_distrib);
 
 
@@ -244,7 +244,7 @@ bool CoClusteringContext::initialization() {
 		for (int i = 0; i<Nsample; ++i) {
 			int sample = randi(1, distr_param(0, (_kr - 1)))(0);
 			Vsample(i, sample) = 1;
-			int row = randi(1, distr_param(0, (_N - 1)))(0);
+			int row = randi(1, distr_param(0, (_Nr - 1)))(0);
 			rowSample(i) = row;
 		}
 		// updating gamma
@@ -255,7 +255,7 @@ bool CoClusteringContext::initialization() {
 		for (int idistrib = 0; idistrib < _number_distrib; idistrib++)
 		{
 
-			Jsample[idistrib] = ceil(percentC * _J[idistrib]);
+			Jsample[idistrib] = ceil(percentC * _Jc[idistrib]);
 			mat Wsample = zeros(Jsample[idistrib],_kc[idistrib]);
 
 			arma::vec probas(_kc[idistrib]);
@@ -268,7 +268,7 @@ bool CoClusteringContext::initialization() {
 
 				int sample = randi(1, distr_param(0, (_kc[idistrib] - 1)))(0);
 				Wsample(i, sample) = 1;
-				int col = randi(1, distr_param(0, (_J[idistrib] - 1)))(0);
+				int col = randi(1, distr_param(0, (_Jc[idistrib] - 1)))(0);
 				colSample(i) = col;
 			}
 
@@ -332,7 +332,7 @@ bool CoClusteringContext::initialization() {
 	}
 	if(_init == "provided"){
 		this->_V.zeros();
-		for(int i = 0; i<_N; i++){
+		for(int i = 0; i<_Nr; i++){
 			this->_V(i,(_zrinit[i]-1)) = 1;
 		}
 		this->_gamma = this->getMeans(this->_V);
@@ -340,7 +340,7 @@ bool CoClusteringContext::initialization() {
 		int iteration = 0;
 		for(int idistrib = 0; idistrib < _number_distrib ; idistrib++){
 			this->_W.at(idistrib).zeros();
-			for(int d = 0; d < _J.at(idistrib); d++){
+			for(int d = 0; d < _Jc.at(idistrib); d++){
 				this->_W.at(idistrib)(d,(_zcinit[iteration]-1)) = 1;
 				iteration++;
 			}
@@ -400,7 +400,7 @@ void CoClusteringContext::SEstep()
 		this->_logprobaW.at(idistrib).zeros();
 		this->_logprobaW.at(idistrib).each_row() += log(this->_rho.at(idistrib));
 		
-		TabProbsResults result(_N, _kr, _J.at(idistrib), _kc.at(idistrib));
+		TabProbsResults result(_Nr, _kr, _Jc.at(idistrib), _kc.at(idistrib));
 		result = _distrib_objects[idistrib]->SEstep(_V, _W.at(idistrib));
 		this->_logprobaV += result._tabprobaV;
 		this->_logprobaW.at(idistrib) += result._tabprobaW;
@@ -408,13 +408,13 @@ void CoClusteringContext::SEstep()
 
 
 	// Computing the probabilites
-	for (int i = 0; i < _N; i++) {
+	for (int i = 0; i < _Nr; i++) {
 		for (int k = 0; k < _kr; k++) {
 			this->_probaV(i, k) = exp(this->_logprobaV(i, k) - logsum(_logprobaV.row(i)));
 		}
 	}
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-		for (int d = 0; d < _J.at(idistrib); d++) {
+		for (int d = 0; d < _Jc.at(idistrib); d++) {
 			for (int h = 0; h < _kc.at(idistrib); h++) {
 				this->_probaW.at(idistrib)(d, h) = exp(this->_logprobaW.at(idistrib)(d, h) - logsum(this->_logprobaW.at(idistrib).row(d)));
 			}
@@ -432,14 +432,14 @@ void CoClusteringContext::SEstepRow()
 
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++)
 	{
-		mat result(_N, _kr);
+		mat result(_Nr, _kr);
 		result.zeros();
 		result = _distrib_objects[idistrib]->SEstepRow(_W.at(idistrib));
 		this->_logprobaV += result;
 	}
 
 	// Computing the probabilites
-	for (int i = 0; i < _N; i++) {
+	for (int i = 0; i < _Nr; i++) {
 		for (int k = 0; k < _kr; k++) {
 			this->_probaV(i, k) = exp(this->_logprobaV(i, k) - logsum(_logprobaV.row(i)));
 		}
@@ -453,14 +453,14 @@ void CoClusteringContext::SEstepRowRandomParamsInit(vector<mat>& Wsamples, vecto
 
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++)
 	{
-		mat result(_N, _kr);
+		mat result(_Nr, _kr);
 		result.zeros();
 		result = _distrib_objects[idistrib]->SEstepRowRandomParamsInit(Wsamples[idistrib], colSamples[idistrib]);
 		this->_logprobaV += result;
 
 	}
 	// Computing the probabilites
-	for (int i = 0; i < _N; i++) {
+	for (int i = 0; i < _Nr; i++) {
 		for (int k = 0; k < _kr; k++) {
 			this->_probaV(i, k) = exp(this->_logprobaV(i, k) - logsum(_logprobaV.row(i)));
 		}
@@ -476,7 +476,7 @@ void CoClusteringContext::SEstepCol()
 		this->_logprobaW.at(idistrib).zeros();
 		this->_logprobaW.at(idistrib).each_row() += log(this->_rho.at(idistrib));
 
-		mat result(_J.at(idistrib), _kc.at(idistrib));
+		mat result(_Jc.at(idistrib), _kc.at(idistrib));
 		result = _distrib_objects[idistrib]->SEstepCol(_V);
 		this->_logprobaW.at(idistrib) += result;
 
@@ -484,7 +484,7 @@ void CoClusteringContext::SEstepCol()
 
 
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-		for (int d = 0; d < _J.at(idistrib); d++) {
+		for (int d = 0; d < _Jc.at(idistrib); d++) {
 			for (int h = 0; h < _kc.at(idistrib); h++) {
 				this->_probaW.at(idistrib)(d, h) = exp(this->_logprobaW.at(idistrib)(d, h) - logsum(this->_logprobaW.at(idistrib).row(d)));
 			}
@@ -498,7 +498,7 @@ void CoClusteringContext::sampleVW() {
 	// Sampling V and W
 
 	this->_V.zeros();
-	for (int i = 0; i < _N; i++) {
+	for (int i = 0; i < _Nr; i++) {
 		// random!
 		rowvec vec = _probaV.row(i);
 		discrete_distribution<> dis(vec.begin(), vec.end());
@@ -509,7 +509,7 @@ void CoClusteringContext::sampleVW() {
 	}
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
 		this->_W.at(idistrib).zeros();
-		for (int d = 0; d < _J.at(idistrib); d++) {
+		for (int d = 0; d < _Jc.at(idistrib); d++) {
 			//random!
 			rowvec vec = _probaW.at(idistrib).row(d);
 			discrete_distribution<> dis(vec.begin(), vec.end());
@@ -525,7 +525,7 @@ void CoClusteringContext::sampleV() {
 	// Sampling V and W
 
 	this->_V.zeros();
-    for (int i = 0; i < _N; i++) {
+    for (int i = 0; i < _Nr; i++) {
 		// random!
 		rowvec vec = _probaV.row(i);
 		discrete_distribution<> dis(vec.begin(), vec.end());
@@ -540,7 +540,7 @@ void CoClusteringContext::sampleW() {
 	// Sampling W
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
 		this->_W.at(idistrib).zeros();
-		for (int d = 0; d < _J.at(idistrib); d++) {
+		for (int d = 0; d < _Jc.at(idistrib); d++) {
 			rowvec vec = _probaW.at(idistrib).row(d);
 			discrete_distribution<> dis(vec.begin(), vec.end());
 			mt19937 gen(_rd());
@@ -555,17 +555,17 @@ void CoClusteringContext::sampleW() {
 void CoClusteringContext::sampleVWStock() {
 	// Sampling V and W
 
-	mat countV = zeros(_N, _kr);
+	mat countV = zeros(_Nr, _kr);
 	vector<mat> countW(_number_distrib);
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-		for (int d = 0; d < _J.at(idistrib); d++) {
-			mat countWid(_J.at(idistrib), _kc.at(idistrib), fill::zeros);
+		for (int d = 0; d < _Jc.at(idistrib); d++) {
+			mat countWid(_Jc.at(idistrib), _kc.at(idistrib), fill::zeros);
 			countW[idistrib] = countWid;
 		}
 	}
 	for (int iter = 0; iter < _nbSEM; iter++) {
 		this->_V.zeros();
-		for (int i = 0; i < _N; i++) {
+		for (int i = 0; i < _Nr; i++) {
 			// random!
 			rowvec vec = _probaV.row(i);
 			discrete_distribution<> dis(vec.begin(), vec.end());
@@ -576,7 +576,7 @@ void CoClusteringContext::sampleVWStock() {
 		}
 		for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
 			this->_W.at(idistrib).zeros();
-			for (int d = 0; d < _J.at(idistrib); d++) {
+			for (int d = 0; d < _Jc.at(idistrib); d++) {
 				rowvec vec = _probaW.at(idistrib).row(d);
 				discrete_distribution<> dis(vec.begin(), vec.end());
 				mt19937 gen(_rd());
@@ -590,13 +590,13 @@ void CoClusteringContext::sampleVWStock() {
 
 	//determinging final partitions
 	this->_V.zeros();
-	for (int i = 0; i < _N; i++) {
+	for (int i = 0; i < _Nr; i++) {
 		int maxind = countV.row(i).index_max();
 		this->_V(i, maxind) = 1;
 	}
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
 		this->_W.at(idistrib).zeros();
-		for (int d = 0; d < _J.at(idistrib); d++) {
+		for (int d = 0; d < _Jc.at(idistrib); d++) {
 			int maxind = countW.at(idistrib).row(d).index_max();
 			this->_W.at(idistrib)(d, maxind) = 1;
 		}
@@ -683,10 +683,10 @@ void CoClusteringContext::noColDegenerancy(vector<vector<int>> distrib_col){
 		int VorW = distrib_col.at(nb_degen)[1];
 
 		if(!(VorW==-2)){
-			int nbToSample = ceil(percent*_J[idistrib]);
+			int nbToSample = ceil(percent*_Jc[idistrib]);
 			std::random_device rdtest;     // only used once to initialise (seed) engine
 			std::mt19937 rng(rdtest());    // random-number engine used (Mersenne-Twister in this case)
-			std::uniform_int_distribution<int> uniW(0,(int)(_J[idistrib]-1)); // guaranteed unbiased
+			std::uniform_int_distribution<int> uniW(0,(int)(_Jc[idistrib]-1)); // guaranteed unbiased
 			std::uniform_int_distribution<int> unikc(0,(int)(_kc[idistrib]-1));
 			for(int i = 0; i<nbToSample; i++){
 				int column = uniW(rng);
@@ -714,10 +714,10 @@ void CoClusteringContext::noRowDegenerancy(vector<vector<int>> distrib_col){
 
 		if(VorW==-2){
 			count++;
-			int nbToSample = ceil(percent*_N);
+			int nbToSample = ceil(percent*_Nr);
 			std::random_device rdtest;     // only used once to initialise (seed) engine
 			std::mt19937 rng(rdtest());    // random-number engine used (Mersenne-Twister in this case)
-			std::uniform_int_distribution<int> uniW(0,(int)(_N-1)); // guaranteed unbiased
+			std::uniform_int_distribution<int> uniW(0,(int)(_Nr-1)); // guaranteed unbiased
 			std::uniform_int_distribution<int> unikr(0,(int)(_kr-1));
 			for(int i = 0; i<nbToSample; i++){
 				int line = uniW(rng);
@@ -745,13 +745,13 @@ void CoClusteringContext::fillParameters(int iteration) {
 
 void CoClusteringContext::fillLabels(int iteration) {
 	//_V.print();
-	for(int i = 0; i<_N; i++){
+	for(int i = 0; i<_Nr; i++){
 		uvec tmp = find(_V.row(i)==1);
 		int label = tmp(0);
 		_zrchain(iteration, i) = label;
 	}
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-		for(int d = 0; d<_J.at(idistrib); d++){
+		for(int d = 0; d<_Jc.at(idistrib); d++){
 			uvec tmp = find(_W.at(idistrib).row(d)==1);
 			int label = tmp(0);
 			_zcchain.at(idistrib)(iteration,d) = label;
@@ -828,8 +828,8 @@ S4 CoClusteringContext::returnCoclustering() {
 
 
     // labels:
-    vec zr = zeros(_N);
-    for(int i=0; i<_N; i++){
+    vec zr = zeros(_Nr);
+    for(int i=0; i<_Nr; i++){
     	uvec k = find(_V.row(i)==1);
     	zr(i) = k(0)+1;
     }
@@ -838,8 +838,8 @@ S4 CoClusteringContext::returnCoclustering() {
 
     List resultzc(_number_distrib);
     for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-    	vec zc = zeros(_J[idistrib]);
-    	for(int d=0; d<_J[idistrib]; d++){
+    	vec zc = zeros(_Jc[idistrib]);
+    	for(int d=0; d<_Jc[idistrib]; d++){
     		uvec h = find(_W[idistrib].row(d)==1);
     		zc(d) = h(0)+1;
     	}
@@ -938,19 +938,19 @@ S4 CoClusteringContext::returnCoclustering() {
 
 double CoClusteringContext::computeICL() {
 	double result = 0;
-	result += -(_kr - 1) / 2 * log(_N);
+	result += -(_kr - 1) / 2 * log(_Nr);
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-		result += -(_kc[idistrib] - 1) / 2 * log(_J[idistrib]);
+		result += -(_kc[idistrib] - 1) / 2 * log(_Jc[idistrib]);
 	}
 
 
 	for (int idistrib = 0; idistrib < _number_distrib; idistrib++) {
-		for (int d = 0; d < _J[idistrib]; d++)
+		for (int d = 0; d < _Jc[idistrib]; d++)
 		{
 			for (int h = 0; h < _kc[idistrib]; h++)
 			{
 				if(_W[idistrib](d, h)==1){
-					for (int i = 0; i < _N; i++)
+					for (int i = 0; i < _Nr; i++)
 					{
 						for (int k = 0; k < _kr; k++)
 						{
@@ -1014,7 +1014,7 @@ double CoClusteringContext::logsum(rowvec logx) {
 
 mat CoClusteringContext::kmeansi() {
 
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
 	mat means;
@@ -1023,11 +1023,11 @@ mat CoClusteringContext::kmeansi() {
 	{
 		return(result);
 	}
-	for (int i = 0; i < _N; i++) {
+	for (int i = 0; i < _Nr; i++) {
 		int num_clust = -1;
 		double dst_old = -1;
 		double dst = -1;
-		int leng = std::accumulate(_J.begin(), _J.end(), 0);
+		int leng = std::accumulate(_Jc.begin(), _Jc.end(), 0);
 		for (int k = 0; k < _kr; k++) {
 			vec a(leng);
 			vec b(leng);

@@ -34,14 +34,14 @@ void Gaussian::missingValuesInit() {
 
 
 TabProbsResults Gaussian::SEstep(const mat& V, const mat& W) {
-	TabProbsResults result = TabProbsResults(_N, _kr, _J, _kc);
-	for (int i = 0; i < _N; i++)
+	TabProbsResults result = TabProbsResults(_Nr, _kr, _Jc, _kc);
+	for (int i = 0; i < _Nr; i++)
 	{
 
 		for (int k = 0; k < _kr; k++)
 		{
 
-			for (int d = 0; d < _J; d++)
+			for (int d = 0; d < _Jc; d++)
 			{
 
 				for (int h = 0; h < _kc; h++)
@@ -65,16 +65,16 @@ TabProbsResults Gaussian::SEstep(const mat& V, const mat& W) {
 }
 
 mat Gaussian::SEstepRow(const mat& W){
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 	
-	for (int d = 0; d < _J; d++)
+	for (int d = 0; d < _Jc; d++)
 	{
 		for (int h = 0; h < _kc; h++)
 		{
 
 			if(W(d,h)==1){
-				for (int i = 0; i < _N; i++)
+				for (int i = 0; i < _Nr; i++)
 				{
 
 					for (int k = 0; k < _kr; k++)
@@ -98,7 +98,7 @@ mat Gaussian::SEstepRow(const mat& W){
 }
 
 mat Gaussian::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
 	mat xsample = _xsep.cols(colSample);
@@ -110,7 +110,7 @@ mat Gaussian::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 		{
 
 			if(Wsample(d,h)==1){
-				for (int i = 0; i < _N; i++)
+				for (int i = 0; i < _Nr; i++)
 				{
 
 					for (int k = 0; k < _kr; k++)
@@ -133,15 +133,15 @@ mat Gaussian::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 }
 
 mat Gaussian::SEstepCol(const mat& V) {
-	mat result(_J, _kc);
+	mat result(_Jc, _kc);
 	result.zeros();
-	for (int i = 0; i < _N; i++)
+	for (int i = 0; i < _Nr; i++)
 	{
 
 		for (int k = 0; k < _kr; k++)
 		{
 			if(V(i,k)==1){
-				for (int d = 0; d < _J; d++)
+				for (int d = 0; d < _Jc; d++)
 				{
 
 					for (int h = 0; h < _kc; h++)
@@ -281,7 +281,7 @@ double Gaussian::computeICL(int i, int d, int k, int h) {
 	double result = 0;
 	if(i==0 && d==0 && k==0 && h==0){
 		// did not divided by two because there are two parameter mu and sigma
-		result = - _kc*_kr * log(_N*_J); 
+		result = - _kc*_kr * log(_Nr*_Jc); 
 	}
 	double tocompute = 1 / (_sigmas(k, h)*std::sqrt(2* M_PI))*std::exp(-0.5*(std::pow((_xsep(i,d)-_mus(k,h))/ _sigmas(k, h),2)));
 	if (!(tocompute > 0)) {

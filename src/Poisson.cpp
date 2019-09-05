@@ -5,14 +5,14 @@ Poisson::Poisson(mat& xsep, int kr, int kc, int nbSEM)
 	:Distribution(xsep, kr, kc, nbSEM)
 {
 	this->_name = "Poisson";
-	this->_mus = zeros(_N);
-	this->_nus = zeros(_J);
+	this->_mus = zeros(_Nr);
+	this->_nus = zeros(_Jc);
 	this->_gammas = zeros(_kr, _kc);
-	this->_resmus = zeros(_N);
-	this->_resnus = zeros(_J);
+	this->_resmus = zeros(_Nr);
+	this->_resnus = zeros(_Jc);
 	this->_resgammas = zeros(_kr, _kc);
-	this->_allmus = zeros(_N, _nbSEM);
-	this->_allnus = zeros(_J, _nbSEM);
+	this->_allmus = zeros(_Nr, _nbSEM);
+	this->_allnus = zeros(_Jc, _nbSEM);
 	this->_allgammas = zeros(_kr, _kc, _nbSEM);
 
 	this->missingValuesInit();
@@ -20,13 +20,13 @@ Poisson::Poisson(mat& xsep, int kr, int kc, int nbSEM)
 	_mus = conv_to<vec>::from(sum(_xsep, 1));
 	_nus = conv_to<vec>::from(sum(_xsep, 0));
 
-	this->_constant = zeros(_N, _J);
+	this->_constant = zeros(_Nr, _Jc);
 	_constant.zeros();
-	this->_musnus = zeros(_N, _J);
+	this->_musnus = zeros(_Nr, _Jc);
 	_musnus.zeros();
-	for (size_t i = 0; i < _N; i++)
+	for (size_t i = 0; i < _Nr; i++)
 	{
-		for (size_t d = 0; d < _J; d++)
+		for (size_t d = 0; d < _Jc; d++)
 		{
 			_constant(i,d) += (_xsep(i, d) * log(_mus(i) * _nus(d)) - logfactorial(_xsep(i, d)));
 			_musnus(i,d) = _mus(i) * _nus(d);
@@ -58,15 +58,15 @@ void Poisson::missingValuesInit() {
 
 
 TabProbsResults Poisson::SEstep(const mat& V, const mat& W) {
-	TabProbsResults result = TabProbsResults(_N, _kr, _J, _kc);
+	TabProbsResults result = TabProbsResults(_Nr, _kr, _Jc, _kc);
 
-	for (size_t i = 0; i < _N; i++)
+	for (size_t i = 0; i < _Nr; i++)
 	{
 
 		for (size_t k = 0; k < _kr; k++)
 		{
 			
-			for (size_t d = 0; d < _J; d++)
+			for (size_t d = 0; d < _Jc; d++)
 			{
 
 				for (size_t h = 0; h < _kc; h++)
@@ -85,12 +85,12 @@ TabProbsResults Poisson::SEstep(const mat& V, const mat& W) {
 }
 
 mat Poisson::SEstepRow(const mat& W) {
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 	result = -( _musnus * W ) * _gammas.t() + ( _xsep * W ) * (log(_gammas)).t();
 	mat toadd =  (_constant * W);
 	// TODO change that! so taht there is no for loop
-	for (size_t i = 0; i < _N; i++)
+	for (size_t i = 0; i < _Nr; i++)
 	{
 		result.row(i)  += sum(toadd.row(i));
 	}
@@ -101,7 +101,7 @@ mat Poisson::SEstepRow(const mat& W) {
 
 
 mat Poisson::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
 	mat xsample = _xsep.cols(colSample);
@@ -114,7 +114,7 @@ mat Poisson::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 		{
 
 			if(Wsample(d,h)==1){
-				for (int i = 0; i < _N; i++)
+				for (int i = 0; i < _Nr; i++)
 				{
 
 					for (int k = 0; k < _kr; k++)
@@ -133,15 +133,15 @@ mat Poisson::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 }
 
 mat Poisson::SEstepCol(const mat& V) {
-	mat result(_J, _kc);
+	mat result(_Jc, _kc);
 	result.zeros();
 
 	/*for (size_t k = 0; k < _kr; k++)
 	{
-		for (size_t i = 0; i < _N; i++)
+		for (size_t i = 0; i < _Nr; i++)
 		{
 			if(V(i, k)==1){
-				for (size_t d = 0; d < _J; d++)
+				for (size_t d = 0; d < _Jc; d++)
 				{
 					for (size_t h = 0; h < _kc; h++)
 					{
@@ -156,7 +156,7 @@ mat Poisson::SEstepCol(const mat& V) {
 	result = -( _musnus.t() * V ) * _gammas + ( _xsep.t() * V ) * (log(_gammas));
 	mat toadd =  (_constant.t() * V);
 	// TODO change that! so taht there is no for loop
-	for (size_t i = 0; i < _J; i++)
+	for (size_t i = 0; i < _Jc; i++)
 	{
 		result.row(i)  += sum(toadd.row(i));
 	}
@@ -290,13 +290,13 @@ List Poisson::returnParamsChain() {
 }
 
 void Poisson::putParamsToZero() {
-	//this->_lambdas = zeros(_N, _J);
+	//this->_lambdas = zeros(_Nr, _Jc);
 }
 
 double Poisson::computeICL(int i, int d, int k, int h) {
 	double result = 0;
 	if(i==0 && d==0 && k==0 && h==0){
-		result = - _kc*_kr/2 * log(_N*_J);
+		result = - _kc*_kr/2 * log(_Nr*_Jc);
 	}
 	double density = -_mus(i) * _nus(d) * _gammas(k, h) + _xsep(i, d) * log(_mus(i) * _nus(d) * _gammas(k, h)) - logfactorial(_xsep(i, d));
 	result += density;

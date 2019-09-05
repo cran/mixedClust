@@ -10,8 +10,8 @@ GaussianMulti::GaussianMulti(cube xsepC, int kr, int kc, int nbSEM)
 	this->_nbDim = _xsepC.n_slices;
 	this->_kr = kr;
 	this->_kc = kc;
-	this->_N = xsepC.n_rows;
-	this->_J = xsepC.n_cols;
+	this->_Nr = xsepC.n_rows;
+	this->_Jc = xsepC.n_cols;
 
 	this->_mus = zeros(_kr, _kc*_nbDim);
 	this->_sigmas = zeros(_kr*_nbDim, _kc*_nbDim);
@@ -36,13 +36,13 @@ void GaussianMulti::missingValuesInit() {
 
 
 TabProbsResults GaussianMulti::SEstep(const mat& V, const mat& W) {
-	TabProbsResults result = TabProbsResults(_N, _kr, _J, _kc);		for (int i = 0; i < _N; i++)
+	TabProbsResults result = TabProbsResults(_Nr, _kr, _Jc, _kc);		for (int i = 0; i < _Nr; i++)
 	{
 
 		for (int k = 0; k < _kr; k++)
 		{
 
-			for (int d = 0; d < _J; d++)
+			for (int d = 0; d < _Jc; d++)
 			{
 
 				for (int h = 0; h < _kc; h++)
@@ -67,15 +67,15 @@ TabProbsResults GaussianMulti::SEstep(const mat& V, const mat& W) {
 }
 
 mat GaussianMulti::SEstepRow(const mat& W) {
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
-	for (int i = 0; i < _N; i++)
+	for (int i = 0; i < _Nr; i++)
 	{
 
 		for (int k = 0; k < _kr; k++)
 		{
 
-			for (int d = 0; d < _J; d++)
+			for (int d = 0; d < _Jc; d++)
 			{
 
 				for (int h = 0; h < _kc; h++)
@@ -96,10 +96,10 @@ mat GaussianMulti::SEstepRow(const mat& W) {
 }
 
 mat GaussianMulti::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 	
-	for (int d = 0; d < _J; d++)
+	for (int d = 0; d < _Jc; d++)
 	{
 
 		// we can't build an xsampleC because subcube does not exist, so we just test if 
@@ -109,7 +109,7 @@ mat GaussianMulti::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 			{
 
 				if(Wsample(d,h)==1){
-					for (int i = 0; i < _N; i++)
+					for (int i = 0; i < _Nr; i++)
 					{
 
 						for (int k = 0; k < _kr; k++)
@@ -135,15 +135,15 @@ mat GaussianMulti::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 }
 
 mat GaussianMulti::SEstepCol(const mat& V) {
-	mat result(_J, _kc);
+	mat result(_Jc, _kc);
 	result.zeros();
-	for (int i = 0; i < _N; i++)
+	for (int i = 0; i < _Nr; i++)
 	{
 
 		for (int k = 0; k < _kr; k++)
 		{
 
-			for (int d = 0; d < _J; d++)
+			for (int d = 0; d < _Jc; d++)
 			{
 
 				for (int h = 0; h < _kc; h++)
@@ -281,7 +281,7 @@ double GaussianMulti::computeICL(int i, int d, int k, int h) {
 	double result = 0;
 	if(i==0 && d==0 && k==0 && h==0){
 		// did not divided by two because there are two parameter mu and sigma
-		result = - _kc * _kr * (_nbDim + _nbDim * (_nbDim-1)/2 ) / 2 * log(_N*_J); 
+		result = - _kc * _kr * (_nbDim + _nbDim * (_nbDim-1)/2 ) / 2 * log(_Nr*_Jc); 
 	}
 	vec mu_kh = conv_to<vec>::from(this->_mus.submat(span(k, k), span(h*_nbDim, h*_nbDim + _nbDim - 1)));
 	mat covMat_kh = this->_sigmas(span(k*_nbDim, k*_nbDim + _nbDim - 1), span(h*_nbDim, h*_nbDim + _nbDim - 1));

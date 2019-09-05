@@ -61,8 +61,8 @@ public:
 	void noRowDegenerancy(vector<vector<int>> distrib_col);
 protected:
 	mat _x;
-	int _N;
-	vector<int> _J;
+	int _Nr;
+	vector<int> _Jc;
 	vector<int>_m;
 	vector<urowvec> _dlist;
 	vector<string> _distrib_names;

@@ -26,15 +26,15 @@ Bos::Bos(mat& xsep, int kr, int kc, int m, int nbSEM, unsigned int iterordiEM)
 	
 	this->_tab_pejs = this->gettabpej();
 
-	this->_xsepCube = zeros(_N, _J, _m);
-	for(int i = 0; i < _N; i++){
-		for(int d = 0; d < _J; d++){
+	this->_xsepCube = zeros(_Nr, _Jc, _m);
+	for(int i = 0; i < _Nr; i++){
+		for(int d = 0; d < _Jc; d++){
 			if(isnan(_xsep(i,d)!=1))
 				this->_xsepCube(i , d, _xsep(i,d)-1) = 1;
 		}
 	}
 
-	this->_cubeProbs = zeros(_N,_J,_m);
+	this->_cubeProbs = zeros(_Nr,_Jc,_m);
 }
 
 Bos::Bos()
@@ -47,7 +47,7 @@ Bos::~Bos()
 }
 
 void Bos::missingValuesInit() {
-	//_xsepCube = zeros(_N, _J, _m);
+	//_xsepCube = zeros(_Nr, _Jc, _m);
 	for (int imiss = 0; imiss < _miss.size(); imiss++) {
 		mt19937 gen(_rd());
 		double eqprob = (double)1 / _m;
@@ -78,14 +78,14 @@ void Bos::missingValuesInit() {
 TabProbsResults Bos::SEstep(const mat& V, const mat& W)
 {
 	cube cubeProbs = this->getCubeProbs();
-	TabProbsResults result = TabProbsResults(_N, _kr, _J, _kc);
-	for (size_t i = 0; i < _N; i++)
+	TabProbsResults result = TabProbsResults(_Nr, _kr, _Jc, _kc);
+	for (size_t i = 0; i < _Nr; i++)
 	{
 
 		for (size_t k = 0; k < _kr; k++)
 		{
 
-			for (size_t d = 0; d < _J; d++)
+			for (size_t d = 0; d < _Jc; d++)
 			{
 
 				for (size_t h = 0; h < _kc; h++)
@@ -110,15 +110,15 @@ TabProbsResults Bos::SEstep(const mat& V, const mat& W)
 mat Bos::SEstepRow(const mat& W)
 {
 
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
-	for (size_t d = 0; d < _J; d++)
+	for (size_t d = 0; d < _Jc; d++)
 	{
 		for (size_t h = 0; h < _kc; h++)
 		{
 			if(W(d, h)==1){
-				for (size_t i = 0; i < _N; i++)
+				for (size_t i = 0; i < _Nr; i++)
 				{
 
 					for (size_t k = 0; k < _kr; k++)
@@ -137,7 +137,7 @@ mat Bos::SEstepRow(const mat& W)
 }
 
 mat Bos::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
 	mat xsample = _xsep.cols(colSample);
@@ -148,7 +148,7 @@ mat Bos::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 		for (size_t h = 0; h < _kc; h++)
 		{
 			if(Wsample(d, h)==1){
-				for (size_t i = 0; i < _N; i++)
+				for (size_t i = 0; i < _Nr; i++)
 				{
 
 					for (size_t k = 0; k < _kr; k++)
@@ -168,15 +168,15 @@ mat Bos::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 mat Bos::SEstepCol(const mat& V)
 {
 
-	mat result(_J, _kc);
+	mat result(_Jc, _kc);
 	result.zeros();
-	for (size_t i = 0; i < _N; i++)
+	for (size_t i = 0; i < _Nr; i++)
 	{
 
 		for (size_t k = 0; k < _kr; k++)
 		{
 			if(V(i, k)==1){
-				for (size_t d = 0; d < _J; d++)
+				for (size_t d = 0; d < _Jc; d++)
 				{
 
 					for (size_t h = 0; h < _kc; h++)
@@ -628,7 +628,7 @@ void Bos::putParamsToZero() {
 double Bos::computeICL(int i, int d, int k, int h) {
 	double result = 0;
 	if(i==0 && d==0 && k==0 && h==0){
-		result = - _kc*_kr * log(_N*_J);
+		result = - _kc*_kr * log(_Nr*_Jc);
 	}
 	cube cubeProbs = this->getCubeProbs();
 	double accum = cubeProbs(k, h, _xsep(i, d) - 1);

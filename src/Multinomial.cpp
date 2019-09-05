@@ -46,12 +46,12 @@ void Multinomial::missingValuesInit() {
 
 TabProbsResults Multinomial::SEstep(const mat& V, const mat& W)
 {
-	TabProbsResults result = TabProbsResults(_N, _kr, _J, _kc);
-	for (size_t i = 0; i < _N; i++)
+	TabProbsResults result = TabProbsResults(_Nr, _kr, _Jc, _kc);
+	for (size_t i = 0; i < _Nr; i++)
 	{
 		for (size_t k = 0; k < _kr; k++)
 		{
-			for (size_t d = 0; d < _J; d++)
+			for (size_t d = 0; d < _Jc; d++)
 			{
 				for (size_t h = 0; h < _kc; h++)
 				{
@@ -83,15 +83,15 @@ TabProbsResults Multinomial::SEstep(const mat& V, const mat& W)
 
 mat Multinomial::SEstepRow(const mat& W)
 {
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
-	for (size_t d = 0; d < _J; d++)
+	for (size_t d = 0; d < _Jc; d++)
 	{
 		for (size_t h = 0; h < _kc; h++)
 		{
 			if(W(d, h) == 1){
-				for (size_t i = 0; i < _N; i++)
+				for (size_t i = 0; i < _Nr; i++)
 				{
 					for (size_t k = 0; k < _kr; k++)
 					{
@@ -115,7 +115,7 @@ mat Multinomial::SEstepRow(const mat& W)
 }
 
 mat Multinomial::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
-	mat result(_N, _kr);
+	mat result(_Nr, _kr);
 	result.zeros();
 
 	mat xsample = _xsep.cols(colSample);
@@ -127,7 +127,7 @@ mat Multinomial::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 		{
 
 			if(Wsample(d,h)==1){
-				for (int i = 0; i < _N; i++)
+				for (int i = 0; i < _Nr; i++)
 				{
 
 					for (int k = 0; k < _kr; k++)
@@ -155,15 +155,15 @@ mat Multinomial::SEstepRowRandomParamsInit(mat& Wsample, uvec& colSample){
 
 mat Multinomial::SEstepCol(const mat& V)
 {
-	mat result(_J, _kc);
+	mat result(_Jc, _kc);
 	result.zeros();
-	for (size_t i = 0; i < _N; i++)
+	for (size_t i = 0; i < _Nr; i++)
 	{
 		for (size_t k = 0; k < _kr; k++)
 		{
 
 			if(V(i, k) == 1){
-				for (size_t d = 0; d < _J; d++)
+				for (size_t d = 0; d < _Jc; d++)
 				{
 					for (size_t h = 0; h < _kc; h++)
 					{
@@ -331,7 +331,7 @@ double Multinomial::computeICL(int i, int d, int k, int h) {
 	double result = 0;
 	if(i==0 && d==0 && k==0 && h==0){
 		// did not divided by two because there are two parameter mu and sigma
-		result = - _kc * _kr * ( _m - 1 ) / 2  * log(_N*_J); 
+		result = - _kc * _kr * ( _m - 1 ) / 2  * log(_Nr*_Jc); 
 	}
 	for (size_t cat = 1; cat <= this->_m; cat++){
 		if(_xsep(i,d) == cat){
